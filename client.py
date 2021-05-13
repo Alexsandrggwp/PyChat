@@ -4,9 +4,8 @@ import tkinter
 import tkinter.scrolledtext
 from tkinter import simpledialog
 
-from nerualNet import CryptoNetwork
 from server import COMMON_HEADER, VECTOR_HEADER, SYNC_HEADER, INIT_HEADER, get_int_length
-from user import receive_message, User
+from entities.user import receive_message, User
 
 HEADER_LENGTH = 10
 IP = "127.0.0.1"

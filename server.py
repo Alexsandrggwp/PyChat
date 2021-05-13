@@ -3,7 +3,7 @@ import socket
 import select
 import threading
 
-from user import User, receive_message
+from entities.user import User, receive_message
 
 HEADER_LENGTH = 10
 IP = "127.0.0.1"

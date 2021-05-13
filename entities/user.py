@@ -1,4 +1,4 @@
-from nerualNet import CryptoNetwork, init_vector
+from neuralNet.nerualNet import CryptoNetwork, init_vector
 
 HIDDEN_NEURONS_AMOUNT = 10
 INPUT_NEURON_AMOUNT = 5
