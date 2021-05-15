@@ -19,14 +19,33 @@ def receive_message(sender_socket):
     return {"header": message_header, "data": message}
 
 
-def _convert_to_bytes(int_collection_2d):
+def convert_int_to_bytes(int_2d_collection):
     shared_bytes = b''
-    for i in int_collection_2d:
+    for i in int_2d_collection:
         for j in i:
             jj = str(j).encode(FORMAT)
             shared_bytes += jj
 
     return shared_bytes
+
+
+def convert_string_to_collection(string_2d_collection):
+    result = []
+    try:
+        for i in range(HIDDEN_NEURONS_AMOUNT):
+            result.append([])
+            for j in range(INPUT_NEURON_AMOUNT):
+                if string_2d_collection[0] == '1':
+                    result[i].append(int(string_2d_collection[0]))
+                    string_2d_collection = string_2d_collection[1:]
+                    continue
+                if string_2d_collection[0] == '-':
+                    result[i].append(int(string_2d_collection[0] + string_2d_collection[1]))
+                    string_2d_collection = string_2d_collection[2:]
+    except ValueError as err:
+        print(f"ValueError: {err}")
+
+    return result
 
 
 class User:
@@ -41,13 +60,13 @@ class User:
         shared_vector = init_vector(INPUT_NEURON_AMOUNT, HIDDEN_NEURONS_AMOUNT)
         self.crypto.inputs = shared_vector
 
-        shared_vector_bytes = _convert_to_bytes(shared_vector)
+        shared_vector_bytes = convert_int_to_bytes(shared_vector)
         shared_inputs_header = f"{len(shared_vector_bytes):<{HEADER_LENGTH}}".encode(FORMAT)
 
         self.socket.send(VECTOR_HEADER + shared_inputs_header + shared_vector_bytes)
 
     def share_weights(self):
-        shared_weights_bytes = _convert_to_bytes(self.crypto.weights)
+        shared_weights_bytes = convert_int_to_bytes(self.crypto.weights)
         shared_weights_header = f"{len(shared_weights_bytes):<{HEADER_LENGTH}}".encode(FORMAT)
 
         self.socket.send(WEIGHT_HEADER + shared_weights_header + shared_weights_bytes)

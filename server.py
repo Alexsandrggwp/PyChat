@@ -3,7 +3,7 @@ import socket
 import select
 import threading
 
-from entities.user import User, receive_message
+from entities.user import User, receive_message, convert_string_to_collection
 
 HEADER_LENGTH = 10
 IP = "127.0.0.1"
@@ -71,50 +71,35 @@ def main():
 #    del clients[user.socket]
 #    break
 def process_neural_crypt(user):
+    count = 0
     while True:
+        count += 1
+        print(count)
         user.share_vector()
 
         server_net_result = user.crypto.perform()
 
+        server_net_result_length = f"{get_int_length(server_net_result):<{HEADER_LENGTH}}".encode(FORMAT)
+
         user.socket.send(SYNC_HEADER +
-                         f"{get_int_length(server_net_result):<{HEADER_LENGTH}}".encode(FORMAT)
+                         server_net_result_length
                          + str(server_net_result).encode(FORMAT))
 
-        if user.socket.recv(HEADER_LENGTH) == SYNC_HEADER:
-            if int(receive_message(user.socket)["data"]) * server_net_result > 0:
+        main_header = user.socket.recv(HEADER_LENGTH)
+        if main_header == SYNC_HEADER:
+            user_net_result = int(receive_message(user.socket)["data"])
+            if user_net_result * server_net_result > 0:
                 user.crypto.learn()
-                if user.crypto.weights != resolve_remote_client_collection(user):
+                data_weights = receive_message(user.socket)["data"]
+                converted_data_weights = convert_string_to_collection(data_weights)
+                if user.crypto.weights != converted_data_weights:
                     continue
                 else:
                     print("CONGRATULATIONS NETS' WEIGHTS ARE EQUAL")
+                    print(count)
                     break
             else:
                 continue
-
-
-def resolve_remote_client_collection(client_user):
-    message_header = client_user.socket.recv(HEADER_LENGTH)
-    if message_header != WEIGHT_HEADER:
-        print(f"Unrecognized header while sync: {message_header}. Terminate session")
-        # sockets_list.remove(self.socket)
-        # self.socket.close()
-        # del clients[user.socket]
-        return False
-
-    result = []
-    message_data = receive_message(client_user.socket)["data"]
-    for i in range(HIDDEN_NEURONS_AMOUNT):
-        result.append([])
-        for j in range(INPUT_NEURON_AMOUNT):
-            if message_data[0] == '1':
-                result[i].append(int(message_data[0]))
-                message_data = message_data[1:]
-                continue
-            if message_data[0] == '-':
-                result[i].append(int(message_data[0] + message_data[1]))
-                message_data = message_data[2:]
-
-    return result
 
 
 def process_message(sender_socket):
@@ -135,7 +120,8 @@ def process_message(sender_socket):
         elif main_header == COMMON_HEADER:
             return receive_message(sender_socket)
 
-    except:
+    except Exception as err:
+        print(f"Something wrong: {err}")
         return False
 
 
@@ -163,7 +149,7 @@ def get_int_length(digit):
     elif digit == 0:
         return "1"
     else:
-        return str(int(math.log10(-digit)) + 1)
+        return str(int(math.log10(-digit)) + 2)
 
 
 if __name__ == "__main__":

@@ -4,8 +4,8 @@ import tkinter
 import tkinter.scrolledtext
 from tkinter import simpledialog
 
-from server import COMMON_HEADER, VECTOR_HEADER, SYNC_HEADER, INIT_HEADER, get_int_length
-from entities.user import receive_message, User
+from server import COMMON_HEADER, VECTOR_HEADER, SYNC_HEADER, INIT_HEADER, get_int_length, WEIGHT_HEADER
+from entities.user import receive_message, User, convert_string_to_collection
 
 HEADER_LENGTH = 10
 IP = "127.0.0.1"
@@ -20,9 +20,10 @@ WEIGHT_LIMIT = 3
 class Client:
 
     def __init__(self, host, port):
-        nick_window = tkinter.Tk()
-        nick_window.withdraw()
-        user_nickname = simpledialog.askstring("Nickname", "Please choose a nickname", parent=nick_window)
+        #nick_window = tkinter.Tk()
+        #nick_window.withdraw()
+        #user_nickname = simpledialog.askstring("Nickname", "Please choose a nickname", parent=nick_window)
+        user_nickname = "nick"
 
         user_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -74,16 +75,15 @@ class Client:
                         vector_message_length = int(vector_message_header)
                         vector_message = self.user.socket.recv(vector_message_length).decode(FORMAT)
 
-                        # self.user.crypto.inputs
-                        self.view_message("system", vector_message)
-                        self.set_vector_from_message(vector_message)
-                        self.view_message("system", self.user.crypto.inputs)
+                        self.user.crypto.inputs = convert_string_to_collection(vector_message)
+                        # self.view_message("system", vector_message)
+                        # self.set_vector_from_message(vector_message)
+                        # self.view_message("system", self.user.crypto.inputs)
 
-            except ConnectionAbortedError:
-                break
-            except Exception as err:
-                print("Error: " + str(err))
-                self.stop()
+                    
+
+            except ConnectionAbortedError as err:
+                print(f"ConnectionAbortedError: {err}")
                 break
 
     def socket_connect(self, host, port):
