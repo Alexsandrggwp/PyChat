@@ -5,25 +5,24 @@ import tkinter.scrolledtext
 from tkinter import simpledialog
 
 from server import COMMON_HEADER, VECTOR_HEADER, SYNC_HEADER, INIT_HEADER, get_int_length, WEIGHT_HEADER
-from entities.user import receive_message, User, convert_string_to_collection
+from entities.user import receive_message, User, convert_string_to_collection, convert_collection_to_bytes
 
 HEADER_LENGTH = 10
 IP = "127.0.0.1"
 PORT = 9090
 FORMAT = 'utf-8'
 
-HIDDEN_NEURONS_AMOUNT = 10
-INPUT_NEURON_AMOUNT = 5
+HIDDEN_NEURONS_AMOUNT = 20
+INPUT_NEURON_AMOUNT = 20
 WEIGHT_LIMIT = 3
 
 
 class Client:
 
     def __init__(self, host, port):
-        #nick_window = tkinter.Tk()
-        #nick_window.withdraw()
-        #user_nickname = simpledialog.askstring("Nickname", "Please choose a nickname", parent=nick_window)
-        user_nickname = "nick"
+        nick_window = tkinter.Tk()
+        nick_window.withdraw()
+        user_nickname = simpledialog.askstring("Nickname", "Please choose a nickname", parent=nick_window)
 
         user_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -53,7 +52,7 @@ class Client:
             try:
                 if self.gui_done:
                     main_header = self.user.socket.recv(HEADER_LENGTH)
-                    if [SYNC_HEADER, VECTOR_HEADER, COMMON_HEADER].count(main_header) == 0:
+                    if [SYNC_HEADER, VECTOR_HEADER, WEIGHT_HEADER, COMMON_HEADER].count(main_header) == 0:
                         print(f"Unrecognized header: {main_header}. Terminate session")
                         self.stop()
 
@@ -80,7 +79,10 @@ class Client:
                         # self.set_vector_from_message(vector_message)
                         # self.view_message("system", self.user.crypto.inputs)
 
-                    
+                    elif main_header == WEIGHT_HEADER:
+                        weight_message = convert_collection_to_bytes(self.user.crypto.weights)
+                        weight_header = f"{len(weight_message):<{HEADER_LENGTH}}".encode(FORMAT)
+                        self.user.socket.send(WEIGHT_HEADER + weight_header + weight_message)
 
             except ConnectionAbortedError as err:
                 print(f"ConnectionAbortedError: {err}")

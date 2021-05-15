@@ -1,7 +1,7 @@
 from neuralNet.nerualNet import CryptoNetwork, init_vector
 
-HIDDEN_NEURONS_AMOUNT = 10
-INPUT_NEURON_AMOUNT = 5
+HIDDEN_NEURONS_AMOUNT = 20
+INPUT_NEURON_AMOUNT = 20
 WEIGHT_LIMIT = 3
 
 HEADER_LENGTH = 10
@@ -18,8 +18,11 @@ def receive_message(sender_socket):
 
     return {"header": message_header, "data": message}
 
+def write_message():
 
-def convert_int_to_bytes(int_2d_collection):
+
+
+def convert_collection_to_bytes(int_2d_collection):
     shared_bytes = b''
     for i in int_2d_collection:
         for j in i:
@@ -35,7 +38,7 @@ def convert_string_to_collection(string_2d_collection):
         for i in range(HIDDEN_NEURONS_AMOUNT):
             result.append([])
             for j in range(INPUT_NEURON_AMOUNT):
-                if string_2d_collection[0] == '1':
+                if string_2d_collection[0] in [str(k) for k in range(10)]:
                     result[i].append(int(string_2d_collection[0]))
                     string_2d_collection = string_2d_collection[1:]
                     continue
@@ -60,13 +63,13 @@ class User:
         shared_vector = init_vector(INPUT_NEURON_AMOUNT, HIDDEN_NEURONS_AMOUNT)
         self.crypto.inputs = shared_vector
 
-        shared_vector_bytes = convert_int_to_bytes(shared_vector)
+        shared_vector_bytes = convert_collection_to_bytes(shared_vector)
         shared_inputs_header = f"{len(shared_vector_bytes):<{HEADER_LENGTH}}".encode(FORMAT)
 
         self.socket.send(VECTOR_HEADER + shared_inputs_header + shared_vector_bytes)
 
     def share_weights(self):
-        shared_weights_bytes = convert_int_to_bytes(self.crypto.weights)
+        shared_weights_bytes = convert_collection_to_bytes(self.crypto.weights)
         shared_weights_header = f"{len(shared_weights_bytes):<{HEADER_LENGTH}}".encode(FORMAT)
 
         self.socket.send(WEIGHT_HEADER + shared_weights_header + shared_weights_bytes)

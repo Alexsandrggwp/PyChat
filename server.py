@@ -16,8 +16,8 @@ VECTOR_HEADER = "VECTORHEAD".encode(FORMAT)
 WEIGHT_HEADER = "WEIGHTHEAD".encode(FORMAT)
 COMMON_HEADER = "COMMONHEAD".encode(FORMAT)
 
-HIDDEN_NEURONS_AMOUNT = 10
-INPUT_NEURON_AMOUNT = 5
+HIDDEN_NEURONS_AMOUNT = 20
+INPUT_NEURON_AMOUNT = 20
 WEIGHT_LIMIT = 3
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -37,8 +37,7 @@ def main():
             if notified_socket == server_socket:
                 client_socket, client_address = server_socket.accept()
 
-                user = process_message(client_socket)
-
+                user = register_user(client_socket)
                 sync_thread = threading.Thread(target=process_neural_crypt(user))
                 sync_thread.start()
 
@@ -74,7 +73,6 @@ def process_neural_crypt(user):
     count = 0
     while True:
         count += 1
-        print(count)
         user.share_vector()
 
         server_net_result = user.crypto.perform()
@@ -90,12 +88,17 @@ def process_neural_crypt(user):
             user_net_result = int(receive_message(user.socket)["data"])
             if user_net_result * server_net_result > 0:
                 user.crypto.learn()
+
+                user.socket.send(WEIGHT_HEADER)
+                user.socket.recv(HEADER_LENGTH)
+
                 data_weights = receive_message(user.socket)["data"]
                 converted_data_weights = convert_string_to_collection(data_weights)
+
                 if user.crypto.weights != converted_data_weights:
                     continue
                 else:
-                    print("CONGRATULATIONS NETS' WEIGHTS ARE EQUAL")
+                    print(f"CONGRATULATIONS NETS' WEIGHTS ARE EQUAL; {user.nickname}")
                     print(count)
                     break
             else:
