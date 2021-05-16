@@ -1,8 +1,4 @@
-from nerualNet import CryptoNetwork, init_vector
-
-HIDDEN_NEURONS_AMOUNT = 10
-INPUT_NEURON_AMOUNT = 50
-WEIGHT_LIMIT = 3
+from neuralNet.nerualNet import CryptoNetwork, init_vector, HIDDEN_NEURONS_AMOUNT, INPUT_NEURON_AMOUNT, WEIGHT_LIMIT
 
 server_net = CryptoNetwork(HIDDEN_NEURONS_AMOUNT, INPUT_NEURON_AMOUNT, WEIGHT_LIMIT)
 client_net = CryptoNetwork(HIDDEN_NEURONS_AMOUNT, INPUT_NEURON_AMOUNT, WEIGHT_LIMIT)

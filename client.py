@@ -6,31 +6,22 @@ from tkinter import simpledialog
 
 from entities.user import User, receive_message, send_message
 from tools.Helper import SYNC_HEADER, VECTOR_HEADER, WEIGHT_HEADER, COMMON_HEADER, INIT_HEADER, \
-    convert_string_to_collection, convert_collection_to_string
-
-HEADER_LENGTH = 10
-IP = "127.0.0.1"
-PORT = 9090
-FORMAT = 'utf-8'
-
-HIDDEN_NEURONS_AMOUNT = 20
-INPUT_NEURON_AMOUNT = 20
-WEIGHT_LIMIT = 3
+    convert_string_to_collection, convert_collection_to_string, IP, PORT, HEADER_LENGTH
 
 
 class Client:
 
     def __init__(self, host, port):
-        #nick_window = tkinter.Tk()
-        #nick_window.withdraw()
-        #user_nickname = simpledialog.askstring("Nickname", "Please choose a nickname", parent=nick_window)
-        user_nickname = "nick"
+        nick_window = tkinter.Tk()
+        nick_window.withdraw()
+        user_nickname = simpledialog.askstring("Nickname", "Please choose a nickname", parent=nick_window)
 
         user_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         self.user = User(f"{len(user_nickname):<{HEADER_LENGTH}}", user_nickname, user_socket)
         self.socket_connect(host, port)
 
+        self.synchronized = False
         self.gui_done = False
         self.running = True
 
@@ -78,19 +69,6 @@ class Client:
     def socket_connect(self, host, port):
         self.user.socket.connect((host, port))
         send_message(self.user.socket, self.user.nickname, INIT_HEADER)
-
-    def set_vector_from_message(self, vector_message):
-        self.user.crypto.inputs = []
-        for i in range(HIDDEN_NEURONS_AMOUNT):
-            self.user.crypto.inputs.append([])
-            for j in range(INPUT_NEURON_AMOUNT):
-                if vector_message[0] == '1':
-                    self.user.crypto.inputs[i].append(int(vector_message[0]))
-                    vector_message = vector_message[1:]
-                    continue
-                if vector_message[0] == '-':
-                    self.user.crypto.inputs[i].append(int(vector_message[0] + vector_message[1]))
-                    vector_message = vector_message[2:]
 
     def stop(self):
         self.running = False

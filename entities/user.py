@@ -1,17 +1,14 @@
-from neuralNet.nerualNet import CryptoNetwork, init_vector
+from neuralNet.nerualNet import CryptoNetwork, init_vector, HIDDEN_NEURONS_AMOUNT, INPUT_NEURON_AMOUNT, WEIGHT_LIMIT
 from tools.Helper import convert_collection_to_string, VECTOR_HEADER, WEIGHT_HEADER, get_int_length, SYNC_HEADER, \
-    COMMON_HEADER
-
-HIDDEN_NEURONS_AMOUNT = 20
-INPUT_NEURON_AMOUNT = 20
-WEIGHT_LIMIT = 3
-
-HEADER_LENGTH = 10
-FORMAT = 'utf-8'
+    COMMON_HEADER, HEADER_LENGTH, FORMAT, INIT_HEADER
 
 
 def receive_message(sender_socket):
     main_header = sender_socket.recv(HEADER_LENGTH)
+    if main_header not in [INIT_HEADER, SYNC_HEADER, VECTOR_HEADER, WEIGHT_HEADER, COMMON_HEADER]:
+        print(f"Unrecognized header: {main_header}. Terminate session")
+        sender_socket.close()
+        raise NameError
     data_header = sender_socket.recv(HEADER_LENGTH).decode(FORMAT)
     data_length = int(data_header)
     data = sender_socket.recv(data_length).decode(FORMAT)
@@ -19,11 +16,11 @@ def receive_message(sender_socket):
     return {"main_header": main_header, "data_header": data_header, "data": data}
 
 
-def send_message(receiver_socket, data, header):
-    if header not in [SYNC_HEADER, VECTOR_HEADER, WEIGHT_HEADER, COMMON_HEADER]:
-        pass
-    #    print(f"Unrecognized header: {header}. Terminate session")
-    #    raise NameError
+def send_message(receiver_socket, data, main_header):
+    if main_header not in [INIT_HEADER, SYNC_HEADER, VECTOR_HEADER, WEIGHT_HEADER, COMMON_HEADER]:
+        print(f"Unrecognized header: {main_header}. Terminate session")
+        receiver_socket.close()
+        raise NameError
     if isinstance(data, int):
         data_header = f"{get_int_length(data):<{HEADER_LENGTH}}".encode(FORMAT)
         data = str(data).encode()
@@ -31,7 +28,7 @@ def send_message(receiver_socket, data, header):
         data_header = f"{len(data):<{HEADER_LENGTH}}".encode(FORMAT)
         data = data.encode()
 
-    receiver_socket.send(header + data_header + data)
+    receiver_socket.send(main_header + data_header + data)
 
 
 class User:
@@ -40,7 +37,7 @@ class User:
         self.nickname_header = nickname_header
         self.nickname = nickname
         self.socket = socket
-        self.crypto = CryptoNetwork(HIDDEN_NEURONS_AMOUNT, INPUT_NEURON_AMOUNT, WEIGHT_LIMIT)
+        self.crypto = CryptoNetwork(INPUT_NEURON_AMOUNT, HIDDEN_NEURONS_AMOUNT, WEIGHT_LIMIT)
 
     def share_vector(self):
         shared_vector = init_vector(INPUT_NEURON_AMOUNT, HIDDEN_NEURONS_AMOUNT)
