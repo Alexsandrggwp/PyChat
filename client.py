@@ -4,8 +4,9 @@ import tkinter
 import tkinter.scrolledtext
 from tkinter import simpledialog
 
-from server import COMMON_HEADER, VECTOR_HEADER, SYNC_HEADER, INIT_HEADER, get_int_length, WEIGHT_HEADER
-from entities.user import receive_message, User, convert_string_to_collection, convert_collection_to_bytes
+from entities.user import User, receive_message, send_message
+from tools.Helper import SYNC_HEADER, VECTOR_HEADER, WEIGHT_HEADER, COMMON_HEADER, INIT_HEADER, \
+    convert_string_to_collection, convert_collection_to_string
 
 HEADER_LENGTH = 10
 IP = "127.0.0.1"
@@ -20,9 +21,10 @@ WEIGHT_LIMIT = 3
 class Client:
 
     def __init__(self, host, port):
-        nick_window = tkinter.Tk()
-        nick_window.withdraw()
-        user_nickname = simpledialog.askstring("Nickname", "Please choose a nickname", parent=nick_window)
+        #nick_window = tkinter.Tk()
+        #nick_window.withdraw()
+        #user_nickname = simpledialog.askstring("Nickname", "Please choose a nickname", parent=nick_window)
+        user_nickname = "nick"
 
         user_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -38,62 +40,44 @@ class Client:
         gui_thread.start()
         receive_thread.start()
 
-    def write_message(self):
-        message = self.input_area.get('1.0', 'end')
-        message_header = f"{len(message):<{HEADER_LENGTH}}"
-        self.user.socket.send(COMMON_HEADER +
-                              message_header.encode(FORMAT) +
-                              message.encode(FORMAT))
-        self.view_message(self.user.nickname, message)
-        self.input_area.delete('1.0', 'end')
-
     def process_message(self):
         while self.running:
             try:
                 if self.gui_done:
-                    main_header = self.user.socket.recv(HEADER_LENGTH)
-                    if [SYNC_HEADER, VECTOR_HEADER, WEIGHT_HEADER, COMMON_HEADER].count(main_header) == 0:
-                        print(f"Unrecognized header: {main_header}. Terminate session")
-                        self.stop()
+                    received_message = receive_message(self.user.socket)
 
-                    if main_header == COMMON_HEADER:
-                        self.view_message(receive_message(self.user.socket)["data"],
-                                          receive_message(self.user.socket)["data"])
+                    if received_message["main_header"] == COMMON_HEADER:
+                        self.view_message(self.user.nickname, received_message["data"])
 
-                    elif main_header == SYNC_HEADER:
+                    elif received_message["main_header"] == SYNC_HEADER:
                         user_net_result = self.user.crypto.perform()
-                        self.user.socket.send(SYNC_HEADER +
-                                              f"{get_int_length(user_net_result):<{HEADER_LENGTH}}".encode(FORMAT)
-                                              + str(user_net_result).encode(FORMAT))
 
-                        if int(receive_message(self.user.socket)["data"]) * user_net_result > 0:
+                        send_message(self.user.socket, user_net_result, SYNC_HEADER)
+                        server_net_result = int(received_message["data"])
+
+                        if server_net_result * user_net_result > 0:
                             self.user.crypto.learn()
 
-                    elif main_header == VECTOR_HEADER:
-                        vector_message_header = self.user.socket.recv(HEADER_LENGTH).decode(FORMAT)
-                        vector_message_length = int(vector_message_header)
-                        vector_message = self.user.socket.recv(vector_message_length).decode(FORMAT)
+                    elif received_message["main_header"] == VECTOR_HEADER:
+                        self.user.crypto.inputs = convert_string_to_collection(received_message["data"])
 
-                        self.user.crypto.inputs = convert_string_to_collection(vector_message)
-                        # self.view_message("system", vector_message)
-                        # self.set_vector_from_message(vector_message)
-                        # self.view_message("system", self.user.crypto.inputs)
-
-                    elif main_header == WEIGHT_HEADER:
-                        weight_message = convert_collection_to_bytes(self.user.crypto.weights)
-                        weight_header = f"{len(weight_message):<{HEADER_LENGTH}}".encode(FORMAT)
-                        self.user.socket.send(WEIGHT_HEADER + weight_header + weight_message)
+                    elif received_message["main_header"] == WEIGHT_HEADER:
+                        weight_message = convert_collection_to_string(self.user.crypto.weights)
+                        send_message(self.user.socket, weight_message, WEIGHT_HEADER)
 
             except ConnectionAbortedError as err:
                 print(f"ConnectionAbortedError: {err}")
                 break
 
+    def write_message(self):
+        message = self.input_area.get('1.0', 'end')
+        send_message(self.user.socket, message, COMMON_HEADER)
+        self.view_message(self.user.nickname, message)
+        self.input_area.delete('1.0', 'end')
+
     def socket_connect(self, host, port):
         self.user.socket.connect((host, port))
-        username_header = f"{len(self.user.nickname):<{HEADER_LENGTH}}"
-        self.user.socket.send(INIT_HEADER +
-                              username_header.encode(FORMAT) +
-                              self.user.nickname.encode(FORMAT))
+        send_message(self.user.socket, self.user.nickname, INIT_HEADER)
 
     def set_vector_from_message(self, vector_message):
         self.user.crypto.inputs = []

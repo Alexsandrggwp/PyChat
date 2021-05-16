@@ -1,20 +1,16 @@
-import math
 import socket
 import select
 import threading
 
-from entities.user import User, receive_message, convert_string_to_collection
+from client import receive_message, send_message
+from entities.user import User
+from tools.Helper import INIT_HEADER, SYNC_HEADER, VECTOR_HEADER, COMMON_HEADER, WEIGHT_HEADER, \
+    convert_string_to_collection
 
 HEADER_LENGTH = 10
 IP = "127.0.0.1"
 PORT = 9090
 FORMAT = 'utf-8'
-
-INIT_HEADER = "INITHEADER".encode(FORMAT)
-SYNC_HEADER = "SYNCHRONIZ".encode(FORMAT)
-VECTOR_HEADER = "VECTORHEAD".encode(FORMAT)
-WEIGHT_HEADER = "WEIGHTHEAD".encode(FORMAT)
-COMMON_HEADER = "COMMONHEAD".encode(FORMAT)
 
 HIDDEN_NEURONS_AMOUNT = 20
 INPUT_NEURON_AMOUNT = 20
@@ -77,32 +73,25 @@ def process_neural_crypt(user):
 
         server_net_result = user.crypto.perform()
 
-        server_net_result_length = f"{get_int_length(server_net_result):<{HEADER_LENGTH}}".encode(FORMAT)
+        send_message(user.socket, server_net_result, SYNC_HEADER)
 
-        user.socket.send(SYNC_HEADER +
-                         server_net_result_length
-                         + str(server_net_result).encode(FORMAT))
+        user_net_result = int(receive_message(user.socket)["data"])
+        if user_net_result * server_net_result > 0:
+            user.crypto.learn()
 
-        main_header = user.socket.recv(HEADER_LENGTH)
-        if main_header == SYNC_HEADER:
-            user_net_result = int(receive_message(user.socket)["data"])
-            if user_net_result * server_net_result > 0:
-                user.crypto.learn()
+            send_message(user.socket, "weight request", WEIGHT_HEADER)
 
-                user.socket.send(WEIGHT_HEADER)
-                user.socket.recv(HEADER_LENGTH)
+            data_weights = receive_message(user.socket)["data"]
+            converted_data_weights = convert_string_to_collection(data_weights)
 
-                data_weights = receive_message(user.socket)["data"]
-                converted_data_weights = convert_string_to_collection(data_weights)
-
-                if user.crypto.weights != converted_data_weights:
-                    continue
-                else:
-                    print(f"CONGRATULATIONS NETS' WEIGHTS ARE EQUAL; {user.nickname}")
-                    print(count)
-                    break
-            else:
+            if user.crypto.weights != converted_data_weights:
                 continue
+            else:
+                print(f"CONGRATULATIONS NETS' WEIGHTS ARE EQUAL; {user.nickname}")
+                print(count)
+                break
+        else:
+            continue
 
 
 def process_message(sender_socket):
@@ -112,7 +101,7 @@ def process_message(sender_socket):
         if not len(main_header):
             return False
 
-        elif [INIT_HEADER, SYNC_HEADER, VECTOR_HEADER, COMMON_HEADER].count(main_header) == 0:
+        elif main_header not in [INIT_HEADER, SYNC_HEADER, VECTOR_HEADER, COMMON_HEADER]:
             print("Unrecognized header. Terminate session")
             sender_socket.close()
             return False
@@ -131,28 +120,17 @@ def process_message(sender_socket):
 def broadcast(broadcast_message, sender_user):
     for receiver_socket in clients:
         if receiver_socket != sender_user.socket:
-            receiver_socket.send(COMMON_HEADER +
-                                 sender_user.nickname_header.encode(FORMAT) + sender_user.nickname.encode(FORMAT) +
-                                 broadcast_message['header'].encode(FORMAT) + broadcast_message['data'].encode(FORMAT))
+            send_message(receiver_socket, broadcast_message, COMMON_HEADER)
 
 
 def register_user(sender_socket):
-    user_data_map = receive_message(sender_socket)
-    sender_user = User(user_data_map["header"], user_data_map["data"], sender_socket)
+    user_data = receive_message(sender_socket)
+    sender_user = User(user_data["data_header"], user_data["data"], sender_socket)
 
     sockets_list.append(sender_socket)
     clients[sender_socket] = sender_user
 
     return sender_user
-
-
-def get_int_length(digit):
-    if digit > 0:
-        return str(int(math.log10(digit)) + 1)
-    elif digit == 0:
-        return "1"
-    else:
-        return str(int(math.log10(-digit)) + 2)
 
 
 if __name__ == "__main__":
