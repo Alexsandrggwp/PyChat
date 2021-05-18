@@ -4,9 +4,9 @@ import tkinter
 import tkinter.scrolledtext
 from tkinter import simpledialog
 
-from entities.user import User, receive_message, send_message
+from entities.user import User
 from tools.Helper import SYNC_HEADER, VECTOR_HEADER, WEIGHT_HEADER, COMMON_HEADER, INIT_HEADER, \
-    convert_string_to_collection, convert_collection_to_string, IP, PORT, HEADER_LENGTH
+    convert_string_to_collection, convert_collection_to_string, IP, PORT, get_int_length
 
 
 class Client:
@@ -18,8 +18,8 @@ class Client:
 
         user_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        self.user = User(f"{len(user_nickname):<{HEADER_LENGTH}}", user_nickname, user_socket)
-        self.socket_connect(host, port)
+        self.user = User(user_nickname, user_socket)
+        self.connect(host, port)
 
         self.synchronized = False
         self.gui_done = False
@@ -35,15 +35,15 @@ class Client:
         while self.running:
             try:
                 if self.gui_done:
-                    received_message = receive_message(self.user.socket)
+                    received_message = self.user.receive_message()
 
                     if received_message["main_header"] == COMMON_HEADER:
-                        self.view_message(self.user.nickname, received_message["data"])
+                        self.view_message(received_message["username"], received_message["data"])
 
                     elif received_message["main_header"] == SYNC_HEADER:
                         user_net_result = self.user.crypto.perform()
 
-                        send_message(self.user.socket, user_net_result, SYNC_HEADER)
+                        self.user.send_message(user_net_result, SYNC_HEADER)
                         server_net_result = int(received_message["data"])
 
                         if server_net_result * user_net_result > 0:
@@ -54,7 +54,7 @@ class Client:
 
                     elif received_message["main_header"] == WEIGHT_HEADER:
                         weight_message = convert_collection_to_string(self.user.crypto.weights)
-                        send_message(self.user.socket, weight_message, WEIGHT_HEADER)
+                        self.user.send_message(weight_message, WEIGHT_HEADER)
 
             except ConnectionAbortedError as err:
                 print(f"ConnectionAbortedError: {err}")
@@ -62,13 +62,13 @@ class Client:
 
     def write_message(self):
         message = self.input_area.get('1.0', 'end')
-        send_message(self.user.socket, message, COMMON_HEADER)
+        self.user.send_message(message, COMMON_HEADER)
         self.view_message(self.user.nickname, message)
         self.input_area.delete('1.0', 'end')
 
-    def socket_connect(self, host, port):
+    def connect(self, host, port):
         self.user.socket.connect((host, port))
-        send_message(self.user.socket, self.user.nickname, INIT_HEADER)
+        self.user.send_message(self.user.nickname, INIT_HEADER)
 
     def stop(self):
         self.running = False
@@ -104,6 +104,8 @@ class Client:
         self.send_button = tkinter.Button(self.win, text="Send", command=self.write_message)
         self.send_button.config(font=("Arial", 16))
         self.send_button.pack(padx=20, pady=5)
+
+        self.view_message(self.user.nickname, "your nickname\n")
 
         self.gui_done = True
 

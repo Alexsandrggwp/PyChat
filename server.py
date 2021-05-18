@@ -2,10 +2,9 @@ import socket
 import select
 import threading
 
-from client import receive_message, send_message
 from entities.user import User
 from tools.Helper import SYNC_HEADER, COMMON_HEADER, WEIGHT_HEADER, \
-    convert_string_to_collection, IP, PORT
+    convert_string_to_collection, IP, PORT, HEADER_LENGTH, INIT_HEADER, FORMAT
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -25,12 +24,12 @@ def main():
                 client_socket, client_address = server_socket.accept()
                 user = register_user(client_socket)
 
-                #sync_thread = threading.Thread(target=process_neural_crypt(user))
-                #sync_thread.start()
+                sync_thread = threading.Thread(target=process_neural_crypt(user))
+                sync_thread.start()
                 print(f"Accepted new connection from {client_address[0]}:{client_address[1]} "
                       f"username:{user.nickname}")
             else:
-                message = receive_message(notified_socket)
+                message = clients[notified_socket].receive_message()
 
                 if message is False:
                     print(f"Closed connection from {clients[notified_socket].nickname}")
@@ -56,7 +55,6 @@ def main():
 #    del clients[user.socket]
 #    break
 def process_neural_crypt(user):
-    print("---------------------")
     print(f"Started neural synchronization for user: {user.nickname}")
     count = 0
     while True:
@@ -65,15 +63,15 @@ def process_neural_crypt(user):
 
         server_net_result = user.crypto.perform()
 
-        send_message(user.socket, server_net_result, SYNC_HEADER)
+        user.send_message(server_net_result, SYNC_HEADER)
 
-        user_net_result = int(receive_message(user.socket)["data"])
+        user_net_result = int(user.receive_message()["data"])
         if user_net_result * server_net_result > 0:
             user.crypto.learn()
 
-            send_message(user.socket, "weight request", WEIGHT_HEADER)
+            user.send_message("weight request", WEIGHT_HEADER)
 
-            data_weights = receive_message(user.socket)["data"]
+            data_weights = user.receive_message()["data"]
             converted_data_weights = convert_string_to_collection(data_weights)
 
             if user.crypto.weights != converted_data_weights:
@@ -81,6 +79,7 @@ def process_neural_crypt(user):
             else:
                 print(f"Synchronization passed successfully for user: {user.nickname}")
                 print(f"The number of iterations equals :{count}")
+                print("---------------------")
                 break
         else:
             continue
@@ -89,13 +88,21 @@ def process_neural_crypt(user):
 def broadcast(broadcast_message, sender_user):
     for receiver_socket in clients:
         if receiver_socket != sender_user.socket:
-            send_message(receiver_socket, broadcast_message, COMMON_HEADER)
+            clients[receiver_socket].send_message(broadcast_message, COMMON_HEADER, sender_user.nickname)
 
 
 def register_user(sender_socket):
-    user_data = receive_message(sender_socket)
-    sender_user = User(user_data["data_header"], user_data["data"], sender_socket)
+    main_header = sender_socket.recv(HEADER_LENGTH)
+    if main_header != INIT_HEADER:
+        print(f"Unrecognized header: {main_header}. Terminate session")
+        sender_socket.close()
+        exit(1)
 
+    user_nickname_header = sender_socket.recv(HEADER_LENGTH).decode(FORMAT)
+    user_nickname_length = int(user_nickname_header)
+    user_nickname = sender_socket.recv(user_nickname_length).decode(FORMAT)
+
+    sender_user = User(user_nickname, sender_socket)
     sockets_list.append(sender_socket)
     clients[sender_socket] = sender_user
 
