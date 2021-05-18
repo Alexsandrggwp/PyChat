@@ -53,7 +53,7 @@ class Client:
                         weight_message = convert_collection_to_string(self.user.crypto.weights)
                         self.user.send_message(weight_message, WEIGHT_HEADER)
 
-                    elif received_message["main_header"] == COMMON_HEADER:
+                    elif received_message["main_header"] == COMMON_HEADER and self.synchronized:
                         self.view_message(received_message["username"], received_message["data"])
 
                     elif received_message["main_header"] == SYNC_COMPLETE_HEADER:
