@@ -105,8 +105,6 @@ class Client:
         self.send_button.config(font=("Arial", 16))
         self.send_button.pack(padx=20, pady=5)
 
-        self.view_message(self.user.nickname, "your nickname\n")
-
         self.gui_done = True
 
         self.win.protocol("WM_DELETE_WINDOW", self.stop)
