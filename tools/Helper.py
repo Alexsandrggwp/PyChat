@@ -12,6 +12,7 @@ SYNC_HEADER = "SYNCHRONIZ".encode(FORMAT)
 VECTOR_HEADER = "VECTORHEAD".encode(FORMAT)
 WEIGHT_HEADER = "WEIGHTHEAD".encode(FORMAT)
 COMMON_HEADER = "COMMONHEAD".encode(FORMAT)
+SYNC_COMPLETE_HEADER = "SYCOMPLETE".encode(FORMAT)
 
 
 def convert_collection_to_string(int_2d_collection):

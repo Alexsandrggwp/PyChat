@@ -6,7 +6,7 @@ from tkinter import simpledialog
 
 from entities.user import User
 from tools.Helper import SYNC_HEADER, VECTOR_HEADER, WEIGHT_HEADER, COMMON_HEADER, INIT_HEADER, \
-    convert_string_to_collection, convert_collection_to_string, IP, PORT, get_int_length
+    convert_string_to_collection, convert_collection_to_string, IP, PORT, SYNC_COMPLETE_HEADER
 
 
 class Client:
@@ -37,10 +37,7 @@ class Client:
                 if self.gui_done:
                     received_message = self.user.receive_message()
 
-                    if received_message["main_header"] == COMMON_HEADER:
-                        self.view_message(received_message["username"], received_message["data"])
-
-                    elif received_message["main_header"] == SYNC_HEADER:
+                    if received_message["main_header"] == SYNC_HEADER:
                         user_net_result = self.user.crypto.perform()
 
                         self.user.send_message(user_net_result, SYNC_HEADER)
@@ -56,14 +53,21 @@ class Client:
                         weight_message = convert_collection_to_string(self.user.crypto.weights)
                         self.user.send_message(weight_message, WEIGHT_HEADER)
 
+                    elif received_message["main_header"] == COMMON_HEADER:
+                        self.view_message(received_message["username"], received_message["data"])
+
+                    elif received_message["main_header"] == SYNC_COMPLETE_HEADER:
+                        self.synchronized = True
+
             except ConnectionAbortedError as err:
                 print(f"ConnectionAbortedError: {err}")
                 break
 
     def write_message(self):
-        message = self.input_area.get('1.0', 'end')
-        self.user.send_message(message, COMMON_HEADER)
-        self.view_message(self.user.nickname, message)
+        if self.synchronized:
+            message = self.input_area.get('1.0', 'end')
+            self.user.send_message(message, COMMON_HEADER)
+            self.view_message(self.user.nickname, message)
         self.input_area.delete('1.0', 'end')
 
     def connect(self, host, port):

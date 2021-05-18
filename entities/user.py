@@ -1,6 +1,6 @@
 from neuralNet.nerualNet import CryptoNetwork, init_vector, HIDDEN_NEURONS_AMOUNT, INPUT_NEURON_AMOUNT, WEIGHT_LIMIT
 from tools.Helper import convert_collection_to_string, VECTOR_HEADER, WEIGHT_HEADER, get_int_length, SYNC_HEADER, \
-    COMMON_HEADER, HEADER_LENGTH, FORMAT, INIT_HEADER
+    COMMON_HEADER, HEADER_LENGTH, FORMAT, INIT_HEADER, SYNC_COMPLETE_HEADER
 
 
 class User:
@@ -11,7 +11,8 @@ class User:
         self.crypto = CryptoNetwork(INPUT_NEURON_AMOUNT, HIDDEN_NEURONS_AMOUNT, WEIGHT_LIMIT)
 
     def send_message(self, data, main_header, nickname="system"):
-        if main_header not in [INIT_HEADER, SYNC_HEADER, VECTOR_HEADER, WEIGHT_HEADER, COMMON_HEADER]:
+        if main_header not in [INIT_HEADER, SYNC_HEADER, VECTOR_HEADER, WEIGHT_HEADER, COMMON_HEADER,
+                               SYNC_COMPLETE_HEADER]:
             print(f"Unrecognized header: {main_header}. Terminate session")
             self.socket.close()
             exit(1)
@@ -35,7 +36,8 @@ class User:
 
     def receive_message(self):
         main_header = self.socket.recv(HEADER_LENGTH)
-        if main_header not in [INIT_HEADER, SYNC_HEADER, VECTOR_HEADER, WEIGHT_HEADER, COMMON_HEADER]:
+        if main_header not in [INIT_HEADER, SYNC_HEADER, VECTOR_HEADER, WEIGHT_HEADER, COMMON_HEADER,
+                               SYNC_COMPLETE_HEADER]:
             print(f"Unrecognized header: {main_header}. Terminate session")
             self.socket.close()
             exit(1)
