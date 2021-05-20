@@ -57,6 +57,7 @@ class Client:
                         self.view_message(received_message["username"], received_message["data"])
 
                     elif received_message["main_header"] == SYNC_COMPLETE_HEADER:
+                        self.view_message("system", "Authentication passed successfully\n")
                         self.synchronized = True
 
             except ConnectionAbortedError as err:
@@ -97,6 +98,8 @@ class Client:
         self.text_area = tkinter.scrolledtext.ScrolledText(self.win)
         self.text_area.pack(padx=20, pady=5)
         self.text_area.config(state='disabled')
+        self.view_message("system", "Authentication started between client and server\n")
+        self.view_message("system", "Providing synchronization between cryptographic networks...\n")
 
         self.msg_label = tkinter.Label(self.win, text="Message:", bg="lightgray")
         self.msg_label.config(font=("Arial", 16))

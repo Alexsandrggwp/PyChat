@@ -2,7 +2,7 @@ import math
 import random
 import secrets
 
-HIDDEN_NEURONS_AMOUNT = 10
+HIDDEN_NEURONS_AMOUNT = 100
 INPUT_NEURON_AMOUNT = 50
 WEIGHT_LIMIT = 3
 
