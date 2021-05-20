@@ -1,8 +1,9 @@
 import secrets
+import time
 
 
-def main():
-    simple_nums = sieve(30)
+def test_rsa():
+    simple_nums = sieve(10000)
 
     p, q = get_random_simple_nums(simple_nums)
     n = p * q
@@ -10,55 +11,45 @@ def main():
     e = init_exponent(euler, simple_nums)
 
     print(f"p = {p} q = {q}")
-    print(f"n = p * q = {p} * {q} ={n}")
-    print(f"φ = (p - 1) * (q - 1) ={euler}")
-
-    print(bezout_recursive(5, 7))
+    print(f"n = p * q = {p} * {q} = {n}")
+    print(f"φ = (p - 1) * (q - 1) = {euler}")
 
     d = reverse_element(e, euler, simple_nums)
-    print(f"secret key: d ={d}")
+    print(f"secret key: d = {d}")
+
+    message = 777777
+
+    start_time = time.time()
+
+    enc = pow(message, e, n)
+    print(f"encripted: {enc}")
+
+    dec = pow(enc, d, n)
+    print(f"decripted: {dec}")
+
+    print(f"{(time.time() - start_time)}")
 
 
 def reverse_element(e, euler, simple_nums):
-    d = [0]
-    x = [0]
-    y = [0]
+    d = 0
 
     while d != 1:
-        gcd_ext(e, euler, d, x, y)
+        x, y, d = gcd_ext(e, euler)
         if d != 1:
             e = init_exponent(euler, simple_nums)
 
-    print(f"open key: e ={e}")
+    print(f"open key: e = {e}")
     print(d, "=", x, "* e +", y, "* φ")
 
-    result = (x[0] % euler + euler) % euler
+    result = (x % euler + euler) % euler
     return result
 
 
-def bezout_recursive(a, b):
-    """A recursive implementation of extended Euclidean algorithm.
-    Returns integer x, y and gcd(a, b) for Bezout equation:
-    ax + by = gcd(a, b).
-    """
+def gcd_ext(a, b):
     if not b:
         return 1, 0, a
-    y, x, g = bezout_recursive(b, a % b)
+    y, x, g = gcd_ext(b, a % b)
     return x, y - (a // b) * x, g
-
-
-def gcd_ext(a, b, d, x, y):
-    if b == 0:
-        d[0] = a
-        x[0] = 1
-        y[0] = 0
-        return
-
-    gcd_ext(b, a % b, d, x, y)
-
-    s = y[0]
-    y[0] = x[0] - int(a / b) * y[0]
-    x[0] = s
 
 
 def gcd(a, b):
@@ -103,4 +94,4 @@ def get_random_simple_nums(nums):
 
 
 if __name__ == "__main__":
-    main()
+    test_rsa()
