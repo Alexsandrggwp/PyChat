@@ -5,8 +5,7 @@ import tkinter.scrolledtext
 from tkinter import simpledialog
 
 from entities.user import User
-from tools.Helper import SYNC_HEADER, VECTOR_HEADER, WEIGHT_HEADER, COMMON_HEADER, INIT_HEADER, \
-    convert_string_to_collection, convert_collection_to_string, IP, PORT, SYNC_COMPLETE_HEADER
+from tools.Converter import *
 
 
 class Client:

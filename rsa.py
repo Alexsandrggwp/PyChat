@@ -17,7 +17,7 @@ def test_rsa():
     d = reverse_element(e, euler, simple_nums)
     print(f"secret key: d = {d}")
 
-    message = 777777
+    message = 7777
 
     start_time = time.time()
 

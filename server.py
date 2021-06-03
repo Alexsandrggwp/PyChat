@@ -3,7 +3,7 @@ import select
 import threading
 
 from entities.user import User
-from tools.Helper import SYNC_HEADER, COMMON_HEADER, WEIGHT_HEADER, \
+from tools.Converter import SYNC_HEADER, COMMON_HEADER, WEIGHT_HEADER, \
     convert_string_to_collection, IP, PORT, HEADER_LENGTH, INIT_HEADER, FORMAT, SYNC_COMPLETE_HEADER
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -45,16 +45,9 @@ def main():
             del clients[notified_socket]
 
 
-# if user.socket.recv(HEADER_LENGTH) != SYNC_HEADER:
-#    print("Unrecognized header while sync. Terminate session")
-#    user.socket.close()
-#    del clients[user.socket]
-#    break
 def process_neural_crypt(user):
     print(f"Started neural synchronization for user: {user.nickname}")
-    count = 0
     while True:
-        count += 1
         user.share_vector()
 
         server_net_result = user.crypto.perform()
@@ -70,16 +63,10 @@ def process_neural_crypt(user):
             data_weights = user.receive_message()["data"]
             converted_data_weights = convert_string_to_collection(data_weights)
 
-            if user.crypto.weights != converted_data_weights:
-                continue
-            else:
+            if user.crypto.weights == converted_data_weights:
                 user.send_message("1", SYNC_COMPLETE_HEADER)
                 print(f"Synchronization passed successfully for user: {user.nickname}")
-                print(f"The number of iterations equals :{count}")
-                print("---------------------")
                 break
-        else:
-            continue
 
 
 def broadcast(broadcast_message, sender_user):

@@ -1,5 +1,5 @@
 from neuralNet.nerualNet import CryptoNetwork, init_vector, HIDDEN_NEURONS_AMOUNT, INPUT_NEURON_AMOUNT, WEIGHT_LIMIT
-from tools.Helper import convert_collection_to_string, VECTOR_HEADER, WEIGHT_HEADER, get_int_length, SYNC_HEADER, \
+from tools.Converter import convert_collection_to_string, VECTOR_HEADER, WEIGHT_HEADER, get_int_length, SYNC_HEADER, \
     COMMON_HEADER, HEADER_LENGTH, FORMAT, INIT_HEADER, SYNC_COMPLETE_HEADER
 
 

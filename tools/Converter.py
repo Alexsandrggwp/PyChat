@@ -19,8 +19,7 @@ def convert_collection_to_string(int_2d_collection):
     shared_bytes = ''
     for i in int_2d_collection:
         for j in i:
-            jj = str(j)
-            shared_bytes += jj
+            shared_bytes += str(j)
 
     return shared_bytes
 
